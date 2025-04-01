@@ -50,7 +50,7 @@ int obtainTokenSizeOfString(const char * data, const char * modelName) {
 
     // first set the model
     std::filesystem::path baseDir = std::filesystem::current_path();
-    baseDir                       = "/models";
+    baseDir                       = "/smeralda/models";
     filesystem::path mypath       = baseDir / modelName;
     model_path                    = mypath.c_str();
 
@@ -93,14 +93,16 @@ int obtainTokenSizeOfString(const char * data, const char * modelName) {
         fprintf(stderr, "Error: could not create context.\n");
         return 1;
     }
+    const llama_vocab * vocab = llama_model_get_vocab(model);
 
-    const bool model_wants_add_bos = llama_add_bos_token(model);
+    /*const bool model_wants_add_bos = llama_add_bos_token(model);*/
+    const bool model_wants_add_bos = llama_vocab_get_add_bos(vocab);
     const bool add_bos             = model_wants_add_bos && !no_bos;
     const bool parse_special       = !no_parse_special;
 
     // preparing
     std::vector<llama_token> tokens;
-    tokens = common_tokenize(model, prompt, add_bos, parse_special);
+    tokens = common_tokenize(vocab, prompt, add_bos, parse_special);
 
     int token_count = 0;
 
@@ -115,16 +117,25 @@ int main(int argc, char * argv[]) {
     for (int i = 1; i < argc; i++) {
         if (argv[i] != NULL) {
             printf("Data stream %d: %s, ", i, argv[i]);
-            printf("size token: %d \n", obtainTokenSizeOfString(argv[i], argv[i+1]));
+            string current(argv[i]);
+            if (current == "E") {
+                printf("Size token: %d \n", obtainTokenSizeOfString(argv[i], argv[i + 1]));
+                printf("Finish encoding.");
+            } else if (current == "D") {
+                printf("Finish decoding.");
+            }
         } else {
             printf("Data stream %d: NULL pointer.\n", i);
+            printf("First parameter %d(E/D): Text to encode or decode.\n", i);
+            printf("Second parameter %d: Text to encode.\n", i);
+            printf("Third parameter %d: Model to use.\n", i);
         }
     }
     return 0;
 }
 
 extern "C" {
-int JnaInterface_obtainTokenSize(const char * data,const char * modelName) {
-    return obtainTokenSizeOfString(data,modelName);
+int JnaInterface_obtainTokenSize(const char * data, const char * modelName) {
+    return obtainTokenSizeOfString(data, modelName);
 }
 }

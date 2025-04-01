@@ -1,4 +1,4 @@
-set(TARGET smeralda)
+set(TARGET tokenizer_smeralda)
 set(RESOURCES tokenizer.cpp)
 set(RESOURCES_LLAMA_WRAPPER LlamaInterface.h LlamaInterface.cpp LlamaWrapper.h LlamaWrapper.cpp)
 add_executable(${TARGET} ${RESOURCES})
