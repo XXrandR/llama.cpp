@@ -1,14 +1,13 @@
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 using namespace std;
-
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
-
 #include "common.h"
 #include "llama.h"
 
@@ -18,7 +17,7 @@ static void llama_log_callback_null(ggml_log_level level, const char * text, voi
     (void) user_data;
 }
 
-vector<string> divideString(const char * sen) {
+static vector<string> divideString(const char * sen) {
     stringstream        ss(sen);
     string              word;
     vector<std::string> words;
@@ -29,17 +28,17 @@ vector<string> divideString(const char * sen) {
 }
 
 // to obtain the latest argument of the command
-int obtainTokenSizeOfString(const char * data, const char * modelName) {
-    if (data == NULL) {
+static int obtainTokenSizeOfString(const char * text, const char * modelName) {
+    if (text == NULL) {
         printf("NULL pointer passed to obtainTokenSizeOfString.\n");
         return 0;  // or handle this error as appropriate
     }
-    vector<std::string> argv = divideString(data);
+    vector<std::string> argv = divideString(text);
 
     // variables where to put any arguments we see.
     bool         no_bos           = false;
     bool         no_parse_special = false;
-    bool         disable_logging  = false;
+    bool         disable_logging  = true;
     const char * model_path       = NULL;
     const char * prompt_path      = NULL;
     const char * prompt_arg       = NULL;
@@ -61,7 +60,7 @@ int obtainTokenSizeOfString(const char * data, const char * modelName) {
     }
 
     // set the prompt
-    prompt_arg = argv[0].c_str();
+    prompt_arg = text;
 
     GGML_ASSERT(model_path);
     GGML_ASSERT(prompt_path || prompt_arg || stdin_set);
@@ -100,35 +99,21 @@ int obtainTokenSizeOfString(const char * data, const char * modelName) {
     const bool add_bos             = model_wants_add_bos && !no_bos;
     const bool parse_special       = !no_parse_special;
 
-    // preparing
+    // tokenizing
     std::vector<llama_token> tokens;
-    tokens = common_tokenize(vocab, prompt, add_bos, parse_special);
-
-    int token_count = 0;
-
-    for (int i = 0; i < (int) tokens.size(); i++) {
-        token_count += tokens[i];
-    }
-
-    return token_count;
+    return common_tokenize(vocab, prompt, add_bos, parse_special).size();
 }
 
 int main(int argc, char * argv[]) {
     for (int i = 1; i < argc; i++) {
-        if (argv[i] != NULL) {
-            printf("Data stream %d: %s, ", i, argv[i]);
-            string current(argv[i]);
-            if (current == "E") {
-                printf("Size token: %d \n", obtainTokenSizeOfString(argv[i], argv[i + 1]));
-                printf("Finish encoding.");
-            } else if (current == "D") {
-                printf("Finish decoding.");
-            }
-        } else {
-            printf("Data stream %d: NULL pointer.\n", i);
-            printf("First parameter %d(E/D): Text to encode or decode.\n", i);
-            printf("Second parameter %d: Text to encode.\n", i);
-            printf("Third parameter %d: Model to use.\n", i);
+        string current(argv[i]);
+        if (current == "E" && i + 2 < argc) {
+            cout << "\nModel: " << argv[i + 1] << " Text: " << argv[i + 2];
+            cout << "\nThe amount it's " << obtainTokenSizeOfString(argv[i + 2], argv[i + 1]);
+        }
+
+        if (current == "D") {
+            continue;
         }
     }
     return 0;

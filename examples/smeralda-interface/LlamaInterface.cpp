@@ -12,4 +12,3 @@ const char * sendRequest(LlamaWrapper * wrapper, char * input) {
     return LlamaWrapper::sendRequest(input);
 }
 
-
